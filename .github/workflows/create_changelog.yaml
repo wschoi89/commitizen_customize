@@ -1,0 +1,53 @@
+# .github/workflows/dumpversion.yaml
+
+name: Create Changelog
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump-version:
+    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+    runs-on: ubuntu-latest
+    name: "Bump version and create changelog with commitizen"
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+        with:
+          token: "${{ secrets.PERSONAL_ACCESS_TOKEN }}"
+          fetch-depth: 0
+
+      - name: Set git user
+        uses: fregante/setup-git-user@v1
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Bump
+        run: |
+          # Install commitizen.
+          python -m pip install --upgrade pip
+          pip install commitizen
+          
+          # Bump version.
+          cz bump
+          
+          # Push bump commit and tag.
+          git push origin main
+          git push origin "HEAD:main" --tags
+          
+          # Save current version into environment var.
+          echo "REVISION=$(cz version --project)" >> $GITHUB_ENV
+      - name: Create Changelog
+        run: |
+          # Create Changelog for release.
+          cz changelog --dry-run ${{ env.REVISION }} > "body.md"
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: "body.md"
+          tag_name: v${{ env.REVISION }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
