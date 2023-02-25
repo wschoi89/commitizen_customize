@@ -1,3 +1,3 @@
 From alpine
 
-WORKDIR /app
+WORKDIR /apps
