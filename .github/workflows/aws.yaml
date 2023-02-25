@@ -1,6 +1,10 @@
 name: Push image to AWS ECR
 
-on: [push]
+on:
+  workflow_run:
+    workflows: ["Create Changelog"]
+    types:
+      - completed
 
   
 jobs:
